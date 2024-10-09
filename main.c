@@ -15,7 +15,7 @@ typedef struct HEADER_TAG {
 }HEADER;
 
 void* malloc_3is(size_t size){
-    int *currentBreak = sbrk(size + 2*sizeof(long));
+    int *currentBreak = sbrk(size + sizeof(HEADER) + sizeof(long));
     if (currentBreak == (void *) -1){
         if (errno==ENOMEM){
             printf("Allocation error/Not enough space");
