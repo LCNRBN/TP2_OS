@@ -17,14 +17,26 @@ typedef struct HEADER_TAG {
 
 HEADER *head_list_free = NULL;  
 
+// | header | memory block | magic number |
+
 void* malloc_3is(size_t size){
-    void *currentBreak = sbrk(size + sizeof(HEADER) + sizeof(long));
-    if (currentBreak == (void *) -1){
+    HEADER* block = sbrk(size + sizeof(HEADER) + sizeof(long));
+
+    if (block == (void *) -1){
         if (errno==ENOMEM){
             printf("Allocation error/Not enough space");
         }
+        return NULL;
     }
-    return currentBreak + sizeof(HEADER);
+    
+    block->bloc_size = size;
+    block->magic_number = MAGIC_NUMBER;
+    //printf("block %p, block->magic_number %ld\n", block, block->magic_number);
+    long *magic_block_end = (long*)(block + 1 + block->bloc_size); //pointer arithmetic
+    //printf("magic_block_end %p, *magic_block_end %ld\n", magic_block_end, *magic_block_end);
+    *magic_block_end = MAGIC_NUMBER;
+
+    return block + 1;
 }
 
 void free_3is(void *ptr) {
@@ -35,6 +47,28 @@ void free_3is(void *ptr) {
     block->ptr_next = head_list_free; 
     head_list_free = block;    
 }
+
+int check_malloc(void *ptr){
+    if(ptr == NULL){
+        return -1;
+    }
+
+    HEADER* block = ptr - sizeof(HEADER);
+
+    if(block->magic_number != MAGIC_NUMBER){
+        printf("memory overflow begin\n");
+        return -1;
+    }
+
+    long *magic_block_end = (long*)(block + 1 + block->bloc_size);
+    if(*magic_block_end != MAGIC_NUMBER){
+        printf("memory overflow end\n");
+        return -1;
+    }
+
+    return 0;
+}
+
 
 int main(){
     printf("size of HEADER : %ld\n", sizeof(HEADER));
@@ -48,6 +82,13 @@ int main(){
     void * p3 = sbrk(0);
     printf("Last adress : %p\n", p3);
 
+    if(check_malloc(p1) == 0){
+        printf("no memory overflow\n");
+    }
+    if(check_malloc(p2) == 0){
+        printf("no memory overflow\n");
+    }
+
     free_3is(p1);
     free_3is(p2);
     free_3is(p3);
@@ -57,4 +98,5 @@ int main(){
         printf("Free block  at address %p\n", (void *)current);
         current = current->ptr_next;
     }
+
 }
