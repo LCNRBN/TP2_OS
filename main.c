@@ -15,6 +15,8 @@ typedef struct HEADER_TAG {
     long magic_number; /* 0x0123456789ABCDEFL;*/ 
 }HEADER;
 
+HEADER *head_list_free = NULL;  
+
 void* malloc_3is(size_t size){
     void *currentBreak = sbrk(size + sizeof(HEADER) + sizeof(long));
     if (currentBreak == (void *) -1){
@@ -22,27 +24,37 @@ void* malloc_3is(size_t size){
             printf("Allocation error/Not enough space");
         }
     }
-    return currentBreak;
+    return currentBreak + sizeof(HEADER);
 }
 
+void free_3is(void *ptr) {
+    if (ptr == NULL){
+        return;
+    }
+    HEADER *block = ptr - sizeof(HEADER);
+    block->ptr_next = head_list_free; 
+    head_list_free = block;    
+}
 
 int main(){
     printf("size of HEADER : %ld\n", sizeof(HEADER));
     void *currentBreak = sbrk(0);
     currentBreak = sbrk(10);
     printf("First adress : %p\n", currentBreak);
-    currentBreak = malloc_3is(10);
-    printf("Adress before malloc 10 ; %p\n", currentBreak);
-    currentBreak = malloc_3is(100);
-    printf("Adress before malloc 100 ; %p\n", currentBreak);
-    currentBreak = sbrk(0);
-    printf("Last adress : %p\n", currentBreak);
-}
+    void * p1 = malloc_3is(10);
+    printf("Adress of memory block before malloc 10 ; %p\n", p1);
+    void * p2 = malloc_3is(100);
+    printf("Adress of memory block before malloc 100 ; %p\n", p2);
+    void * p3 = sbrk(0);
+    printf("Last adress : %p\n", p3);
 
-
-/*void free_3is(void *ptr) {
-    if (ptr == NULL){
-        return;
+    free_3is(p1);
+    free_3is(p2);
+    free_3is(p3);
+    HEADER *current = head_list_free;
+    printf("List of free blocks:\n");
+    while (current != NULL) {
+        printf("Free block  at address %p\n", (void *)current);
+        current = current->ptr_next;
     }
-    HEADER* head = 
-}*/
+}
