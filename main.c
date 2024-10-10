@@ -20,6 +20,21 @@ HEADER *head_list_free = NULL;
 // | header | memory block | magic number |
 
 void* malloc_3is(size_t size){
+    HEADER *prev = NULL;
+    HEADER *current = head_list_free;
+    while (current != NULL) {
+        if (current->bloc_size >= size) {
+            if (prev == NULL) {
+                head_list_free = current->ptr_next;
+            } else {
+                prev->ptr_next = current->ptr_next;
+            }
+            current->ptr_next = NULL;  
+            return (void *)(current + 1); 
+        }
+        prev = current;
+        current = current->ptr_next;
+    }
     HEADER* block = sbrk(size + sizeof(HEADER) + sizeof(long));
 
     if (block == (void *) -1){
@@ -33,9 +48,8 @@ void* malloc_3is(size_t size){
     block->magic_number = MAGIC_NUMBER;
     //printf("block %p, block->magic_number %ld\n", block, block->magic_number);
     long *magic_block_end = (long*)(block + 1 + block->bloc_size); //pointer arithmetic
-    //printf("magic_block_end %p, *magic_block_end %ld\n", magic_block_end, *magic_block_end);
     *magic_block_end = MAGIC_NUMBER;
-
+    printf("magic_block_end %p, *magic_block_end %ld\n", magic_block_end, *magic_block_end);
     return block + 1;
 }
 
@@ -61,6 +75,7 @@ int check_malloc(void *ptr){
     }
 
     long *magic_block_end = (long*)(block + 1 + block->bloc_size);
+    printf("magic_block_end %p, *magic_block_end %ld\n", magic_block_end, *magic_block_end);
     if(*magic_block_end != MAGIC_NUMBER){
         printf("memory overflow end\n");
         return -1;
@@ -68,6 +83,7 @@ int check_malloc(void *ptr){
 
     return 0;
 }
+
 
 
 int main(){
@@ -91,12 +107,13 @@ int main(){
 
     free_3is(p1);
     free_3is(p2);
-    free_3is(p3);
+
+    void * p4 = malloc_3is(8);
     HEADER *current = head_list_free;
     printf("List of free blocks:\n");
     while (current != NULL) {
         printf("Free block  at address %p\n", (void *)current);
         current = current->ptr_next;
     }
-
+    free_3is(p4);
 }
