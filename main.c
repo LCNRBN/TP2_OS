@@ -72,12 +72,51 @@ void* malloc_3is(size_t size){
 }
 
 void free_3is(void *ptr) {
-    if (ptr == NULL){
+     if (ptr == NULL){
         return;
     }
+    HEADER *prev = NULL;
+    HEADER *current = head_list_free;
     HEADER *block = ptr - sizeof(HEADER);
-    block->ptr_next = head_list_free; 
-    head_list_free = block;    
+   
+    while(block < current && current != NULL){ //sorting out
+        prev = current;
+        current = current->ptr_next;
+    }
+
+    block->ptr_next = current; 
+
+    if (prev == NULL){
+        head_list_free = block;
+    } 
+    else{
+        prev->ptr_next = block;
+    }
+
+//  | header 1 | memory block 1 | magic number 1 | inserted header 2 | inserted memory block 2 | inserted magic number 2 | header 3 | memory block 3 | magic number 3 |
+    
+    if (block->ptr_next != NULL && (block + 1) + block->bloc_size + sizeof(long) == block->ptr_next){ //contiguous addresses with following block 3
+        long *magic_number_position = (block + 1) + block->bloc_size;
+        *magic_number_position = NULL; //delete inserted magic number 2 (keep magic number 3)
+        block->bloc_size += sizeof(HEADER) + block->ptr_next->bloc_size + sizeof(long);
+        block->ptr_next = block->ptr_next->ptr_next; //merge 2 and 3
+    }
+
+    if (prev != NULL && (prev + 1) + prev->bloc_size + sizeof(long) == block){ //contiguous addresses with previous block 1
+        prev->bloc_size += sizeof(HEADER) + block->bloc_size + sizeof(long);
+        long *magic_number_position = (prev + 1) + prev->bloc_size;
+        *magic_number_position = NULL; //delete magic number 1 (keep inserted magic number 2)
+        prev->bloc_size += sizeof(HEADER) + block->bloc_size + sizeof(long);
+        prev->ptr_next = block->ptr_next; //merge 1 and 2
+
+            if (prev->ptr_next != NULL && (prev + 1) + prev->bloc_size + sizeof(long) == prev->ptr_next){ //contiguous addresses with both previous and following blocks 1, 3
+            prev->bloc_size += sizeof(HEADER) + prev->ptr_next->bloc_size + sizeof(long);
+            magic_number_position = (prev + 1) + prev->bloc_size;
+            *magic_number_position = NULL; //delete magic number 2 (keep magic number 3)
+            prev->ptr_next = prev->ptr_next->ptr_next; //merge (merge 1 and 2) and 3
+        }
+    }
+    //Lucian : it is important to delete/reset some magic number because of the memory overflow checks in check_malloc()
 }
 
 int check_malloc(void *ptr){
