@@ -19,18 +19,36 @@ HEADER *head_list_free = NULL;
 
 // | header | memory block | magic number |
 
+void split_block(HEADER *block, size_t size) {
+    size_t remaining_size = block->bloc_size - (size + sizeof(HEADER) + sizeof(long));
+    if (remaining_size > sizeof(HEADER) + sizeof(long)) {
+        HEADER *new_block = (HEADER *)((char *)block + sizeof(HEADER) + size + sizeof(long));
+
+        new_block->bloc_size = remaining_size;
+        new_block->magic_number = MAGIC_NUMBER;
+
+        new_block->ptr_next = block->ptr_next;
+        block->ptr_next = new_block;
+        block->bloc_size = size;
+    }
+}
+
 void* malloc_3is(size_t size){
     HEADER *prev = NULL;
     HEADER *current = head_list_free;
     while (current != NULL) {
-        if (current->bloc_size >= size) {
+        if (current->bloc_size >= size + sizeof(HEADER) +sizeof(long)) {
+            split_block(current, size);
             if (prev == NULL) {
                 head_list_free = current->ptr_next;
             } else {
                 prev->ptr_next = current->ptr_next;
             }
             current->ptr_next = NULL;  
-            return (void *)(current + 1); 
+            current->magic_number=MAGIC_NUMBER;
+            long *magic_block_end = (long*)(current + 1 + current->bloc_size);
+            *magic_block_end = MAGIC_NUMBER;
+            return (current + 1); 
         }
         prev = current;
         current = current->ptr_next;
@@ -83,8 +101,6 @@ int check_malloc(void *ptr){
 
     return 0;
 }
-
-
 
 int main(){
     printf("size of HEADER : %ld\n", sizeof(HEADER));
