@@ -22,7 +22,7 @@ HEADER *head_list_free = NULL;
 void split_block(HEADER *block, size_t size) {
     size_t remaining_size = block->bloc_size - (size + sizeof(HEADER) + sizeof(long));
     if (remaining_size > sizeof(HEADER) + sizeof(long)) {
-        HEADER *new_block = (HEADER *)((char *)block + sizeof(HEADER) + size + sizeof(long));
+        HEADER *new_block = block + 1 + size + sizeof(long);
 
         new_block->bloc_size = remaining_size;
         new_block->magic_number = MAGIC_NUMBER;
