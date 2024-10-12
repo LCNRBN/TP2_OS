@@ -65,7 +65,7 @@ void* malloc_3is(size_t size){
     block->bloc_size = size;
     block->magic_number = MAGIC_NUMBER;
     //printf("block %p, block->magic_number %ld\n", block, block->magic_number);
-    long *magic_block_end = (long*)(block + 1 + block->bloc_size); //pointer arithmetic
+    long *magic_block_end = block + 1 + block->bloc_size; //pointer arithmetic
     *magic_block_end = MAGIC_NUMBER;
     printf("magic_block_end %p, *magic_block_end %ld\n", magic_block_end, *magic_block_end);
     return block + 1;
@@ -142,6 +142,7 @@ int check_malloc(void *ptr){
 }
 
 int main(){
+    printf("======= Block malloc_3is Test =======\n");
     printf("size of HEADER : %ld\n", sizeof(HEADER));
     void *currentBreak = sbrk(0);
     currentBreak = sbrk(10);
@@ -153,6 +154,7 @@ int main(){
     void * p3 = sbrk(0);
     printf("Last adress : %p\n", p3);
 
+    printf("======= Block check_malloc Test =======\n");
     if(check_malloc(p1) == 0){
         printf("no memory overflow\n");
     }
@@ -163,7 +165,7 @@ int main(){
     free_3is(p1);
     free_3is(p2);
 
-    void * p4 = malloc_3is(8);
+        void * p4 = malloc_3is(8);
     HEADER *current = head_list_free;
     printf("List of free blocks:\n");
     while (current != NULL) {
@@ -171,4 +173,28 @@ int main(){
         current = current->ptr_next;
     }
     free_3is(p4);
+    free_3is(p3);
+
+    printf("======= Block merge Test =======\n");
+    void * p5 = malloc_3is(21);
+    void * p6 = malloc_3is(11);
+    void * p7 = malloc_3is(11);
+    free_3is(p6);
+    free_3is(p7);
+    
+    current = head_list_free;
+    printf("free blocks list after free_3is of Blocks 6 and 7 :\n");
+    while (current != NULL) {
+        printf("free block at %p, size : %lu\n", current, current->bloc_size);
+        current = current->ptr_next;
+    }
+    free_3is(p5);
+    // several issues here
+    current = head_list_free;
+    printf("free blocks list after free_3is and merge of all 3 blocks :\n");
+    while (current != NULL) {
+        printf("free block at %p, size : %lu\n", (void *)current, current->bloc_size);
+        current = current->ptr_next;
+    }
+
 }
